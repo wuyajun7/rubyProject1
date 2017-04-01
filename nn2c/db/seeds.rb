@@ -1,0 +1,113 @@
+# This file should contain all the record creation needed to seed the database with its default values.
+# The data can then be loaded with the rails db:seed command (or created alongside the database with db:setup).
+#
+# Examples:
+#
+#   movies = Movie.create([{ name: 'Star Wars' }, { name: 'Lord of the Rings' }])
+#   Character.create(name: 'Luke', movie: movies.first)
+
+standards_names = ["国产", "中规", "美规", "中东", "欧版", "加版", "墨西哥版"]
+standards_names.each do |cur_name|
+  Standard.find_or_create_by(name: cur_name, status: 0)
+end
+
+brand_names = ["宝马", "奔驰", "大众", "丰田", "哈弗", "Jeep", "捷豹", "凯迪拉克"]
+
+@car_models = {
+    "宝马": {
+        "宝马x1": ["xDrive18Li 时尚型", "xDrive20Li 豪华型"],
+        "宝马3系": ["318Li 时尚型", "320Li 豪华型"],
+        "宝马x2": ["xDrive16Li 时尚型", "xDrive16Li 豪华型"],
+        "宝马5系": ["315Li 时尚型", "315Li 豪华型"]
+    },
+    "奔驰": {
+        "奔驰C级": ["C 200 运动型", "C180 L 时尚型"],
+        "奔驰E级": ["E 200 运动型", "E300 L 时尚型"],
+        "奔驰B级": ["C 200 运动型", "C180 L 时尚型"],
+        "奔驰F级": ["E 200 运动型", "E300 L 时尚型"]
+    },
+    "大众": {
+        "朗逸": ["手动风尚型", "自动舒适型"],
+        "帕萨特": ["280TSI DSG尊享型", "280TSI DSG尊荣型"],
+        "速腾": ["手动风尚型", "自动舒适型"],
+        "迈腾": ["280TSI DSG尊享型", "280TSI DSG尊荣型"],
+        "高尔夫": ["手动风尚型", "自动舒适型"],
+        "途观": ["280TSI DSG尊享型", "280TSI DSG尊荣型"]
+    },
+    "丰田": {
+        "普拉多": ["2.7L 手动版", "2.7L 自动豪华版"],
+        "雷凌": ["1.2T E 手动新锐版", "1.2T G 手动新锐版"]
+    },
+    "哈弗": {
+        "哈弗H1": ["1.5L 手动版", "1.5L 自动豪华版"],
+        "哈弗H2": ["1.5T E 手动新锐版", "1.5T G 手动新锐版"]
+    },
+    "Jeep": {
+        "指南者": ["1.5L 手动版", "1.5L 自动豪华版"],
+        "自由光": ["1.5T E 手动新锐版", "1.5T G 手动新锐版"]
+    },
+    "捷豹": {
+        "捷豹XFL": ["1.5L 手动版", "1.5L 自动豪华版"],
+    },
+    "凯迪拉克": {
+        "凯迪拉克CT6": ["1.5L 手动版", "1.5L 自动豪华版"],
+    }
+}
+
+@years = [2015, 2016, 2017]
+
+brand_names.each do |cur_name|
+  brand = Brand.find_or_create_by(name: cur_name, status: 0)
+
+  case cur_name
+    when "宝马"
+      Firm.find_or_create_by(name: "华晨宝马", brand: brand)
+      Firm.find_or_create_by(name: "宝马进口", brand: brand)
+    when "奔驰"
+      Firm.find_or_create_by(name: "北京奔驰", brand: brand)
+      Firm.find_or_create_by(name: "奔驰进口", brand: brand)
+    when "大众"
+      Firm.find_or_create_by(name: "一汽大众", brand: brand)
+      Firm.find_or_create_by(name: "上汽大众", brand: brand)
+    when "丰田"
+      Firm.find_or_create_by(name: "广汽丰田", brand: brand)
+      Firm.find_or_create_by(name: "一汽丰田", brand: brand)
+    when "哈弗"
+      Firm.find_or_create_by(name: "哈弗", brand: brand)
+    when "Jeep"
+      Firm.find_or_create_by(name: "Jeep", brand: brand)
+    when "捷豹"
+      Firm.find_or_create_by(name: "捷豹", brand: brand)
+    when "凯迪拉克"
+      Firm.find_or_create_by(name: "凯迪拉克", brand: brand)
+  end
+
+  case cur_name
+    when "宝马", "奔驰", "大众", "丰田"
+      brand.standards = Standard.all
+    when "哈弗"
+      brand.standards = [Standard.find_by(name: '国产')]
+    when "Jeep", "捷豹"
+      brand.standards = Standard.where(name: ['国产', '中规'])
+    else
+      brand.standards = Standard.where(name: ['中规', '中东', '欧版'])
+  end
+
+  brand.reload # 重新获取一次
+
+  car_models_bc = @car_models[cur_name.to_sym]
+  car_models_bc.each do |cm_name, bc_arr|
+    car_model = CarModel.find_or_initialize_by(name: cm_name, brand: brand)
+    car_model.standard = brand.standards.to_a.shuffle.first
+    car_model.firm = brand.firms.to_a.shuffle.first
+    car_model.save
+    bc_arr.each do |bc_name|
+      base_car = BaseCar.find_or_initialize_by(style: bc_name, status: 0, brand: brand, car_model: car_model)
+      base_car.standard = brand.standards.to_a.shuffle.first
+      base_car.year = @years.shuffle.first
+      base_car.base_price = rand(22.22..66.99).round(2)
+      base_car.save
+    end
+  end
+end
+
